@@ -1,0 +1,108 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    color-scheme: dark;
+  }
+
+  html,
+  body,
+  #root {
+    height: 100%;
+  }
+
+  body {
+    @apply bg-ink-900 text-chalk font-sans antialiased;
+    /* subtle radial vignette so the dark UI has depth, like the references */
+    background-image:
+      radial-gradient(900px 500px at 80% -10%, rgba(199, 247, 22, 0.08), transparent 60%),
+      radial-gradient(700px 500px at 0% 110%, rgba(59, 130, 246, 0.06), transparent 55%);
+    background-attachment: fixed;
+  }
+
+  /* Headings use the condensed athletic display face */
+  h1, h2, h3, h4 {
+    @apply font-display tracking-tight;
+  }
+
+  /* Custom scrollbar — keeps the dark aesthetic */
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: #2a333b transparent;
+  }
+  *::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+  *::-webkit-scrollbar-thumb {
+    background: #2a333b;
+    border-radius: 999px;
+    border: 2px solid transparent;
+    background-clip: content-box;
+  }
+  *::-webkit-scrollbar-thumb:hover {
+    background: #3a444d;
+    background-clip: content-box;
+  }
+
+  /* number inputs: hide spinners for a cleaner log experience */
+  input[type='number']::-webkit-outer-spin-button,
+  input[type='number']::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+  }
+  input[type='number'] {
+    -moz-appearance: textfield;
+  }
+
+  ::selection {
+    background: rgba(199, 247, 22, 0.3);
+    color: #fff;
+  }
+}
+
+@layer components {
+  .card {
+    @apply rounded-3xl bg-ink-700/80 border border-white/[0.06] shadow-card backdrop-blur-sm;
+  }
+
+  .input-field {
+    @apply w-full rounded-2xl bg-ink-800 border border-white/[0.08] px-4 py-3 text-chalk
+      placeholder:text-ash outline-none transition
+      focus:border-lime-400/60 focus:ring-2 focus:ring-lime-400/20;
+  }
+
+  .label {
+    @apply block text-xs font-semibold uppercase tracking-wider text-mist mb-1.5;
+  }
+
+  /* shimmering skeleton block */
+  .skeleton {
+    @apply relative overflow-hidden rounded-xl bg-ink-600/60;
+  }
+  .skeleton::after {
+    content: '';
+    @apply absolute inset-0;
+    background: linear-gradient(
+      90deg,
+      transparent,
+      rgba(255, 255, 255, 0.06),
+      transparent
+    );
+    transform: translateX(-100%);
+    animation: shimmer 1.4s infinite;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+}
