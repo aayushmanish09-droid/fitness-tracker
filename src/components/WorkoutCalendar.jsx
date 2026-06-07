@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { ChevronLeft, ChevronRight, RotateCcw } from 'lucide-react'
 import * as api from '../services/api.js'
-import { WORKOUT_COLORS, WORKOUT_TYPES } from '../lib/constants.js'
+import { colorForLabel, REST_LABEL } from '../lib/constants.js'
 import { WorkoutLegend } from './workoutVisuals.jsx'
 
 const MONTHS = [
@@ -54,8 +54,15 @@ export default function WorkoutCalendar({ userId, onSelectWorkout }) {
     return arr
   }, [year, month, data])
 
-  const trainingDays = WORKOUT_TYPES.filter((t) => t !== 'Rest').reduce(
-    (n, t) => n + (data.summary[t] || 0),
+  // labels present this month, training days (Rest sorts last), counts
+  const labels = useMemo(() => {
+    const present = Object.keys(data.summary)
+    const training = present.filter((t) => t !== REST_LABEL).sort()
+    return data.summary[REST_LABEL] ? [...training, REST_LABEL] : training
+  }, [data.summary])
+
+  const trainingDays = Object.entries(data.summary).reduce(
+    (n, [t, c]) => (t === REST_LABEL ? n : n + c),
     0,
   )
 
@@ -87,30 +94,34 @@ export default function WorkoutCalendar({ userId, onSelectWorkout }) {
 
       {/* Monthly summary */}
       <div className="mb-4 flex flex-wrap gap-2">
-        {WORKOUT_TYPES.map((t) => {
+        {labels.length === 0 && (
+          <span className="text-sm text-ash">No workouts logged this month yet.</span>
+        )}
+        {labels.map((t) => {
           const count = data.summary[t] || 0
-          const c = WORKOUT_COLORS[t]
+          const hex = colorForLabel(t)
           return (
             <span
               key={t}
               className="inline-flex items-center gap-1.5 rounded-xl px-2.5 py-1.5 text-xs font-semibold"
-              style={{
-                backgroundColor: count ? c.hex + '1f' : 'rgba(255,255,255,0.03)',
-                color: count ? c.hex : '#6B757C',
-              }}
+              style={{ backgroundColor: hex + '1f', color: hex }}
             >
-              <span className="h-2 w-2 rounded-full" style={{ backgroundColor: count ? c.hex : '#3a444d' }} />
-              {c.label}: {count}
+              <span className="h-2 w-2 rounded-full" style={{ backgroundColor: hex }} />
+              {t}: {count}
             </span>
           )
         })}
-        <span className="inline-flex items-center gap-1.5 rounded-xl bg-lime-400/15 px-2.5 py-1.5 text-xs font-bold text-lime-300">
-          Training days: {trainingDays}
-        </span>
+        {trainingDays > 0 && (
+          <span className="inline-flex items-center gap-1.5 rounded-xl bg-lime-400/15 px-2.5 py-1.5 text-xs font-bold text-lime-300">
+            Training days: {trainingDays}
+          </span>
+        )}
       </div>
 
       {/* Legend */}
-      <WorkoutLegend className="mb-4 rounded-2xl bg-ink-800/60 px-3 py-2.5" />
+      {labels.length > 0 && (
+        <WorkoutLegend labels={labels} className="mb-4 rounded-2xl bg-ink-800/60 px-3 py-2.5" />
+      )}
 
       {/* Weekday header */}
       <div className="mb-1.5 grid grid-cols-7 gap-1.5">
@@ -127,7 +138,7 @@ export default function WorkoutCalendar({ userId, onSelectWorkout }) {
           if (!cell) return <div key={`b${i}`} />
           const isToday = cell.dateStr === todayStr()
           const entry = cell.entry
-          const c = entry ? WORKOUT_COLORS[entry.type] : null
+          const hex = entry ? colorForLabel(entry.type) : null
           const clickable = entry && onSelectWorkout
           const Tag = clickable ? 'button' : 'div'
           return (
@@ -142,8 +153,8 @@ export default function WorkoutCalendar({ userId, onSelectWorkout }) {
               style={
                 entry
                   ? {
-                      backgroundColor: c.hex,
-                      color: entry.type === 'Lower' ? '#1a1206' : '#fff',
+                      backgroundColor: hex,
+                      color: '#fff',
                       boxShadow: isToday ? '0 0 0 2px #C7F716' : 'none',
                     }
                   : {

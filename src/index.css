@@ -78,6 +78,22 @@
     @apply block text-xs font-semibold uppercase tracking-wider text-mist mb-1.5;
   }
 
+  /* muscle-map highlight pulse */
+  .mm-pulse {
+    animation: mm-pulse 1.7s ease-in-out infinite;
+    transform-box: fill-box;
+    transform-origin: center;
+  }
+  @keyframes mm-pulse {
+    0%,
+    100% {
+      opacity: 0.78;
+    }
+    50% {
+      opacity: 1;
+    }
+  }
+
   /* shimmering skeleton block */
   .skeleton {
     @apply relative overflow-hidden rounded-xl bg-ink-600/60;

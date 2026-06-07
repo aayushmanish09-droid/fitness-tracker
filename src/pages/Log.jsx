@@ -14,10 +14,9 @@ import {
 import { useAuth } from '../context/AuthContext.jsx'
 import * as api from '../services/api.js'
 import { formatCalories } from '../lib/foodScore.js'
-import { ROUTINE_TYPES } from '../lib/constants.js'
-import { Button, Card, EmptyState, Skeleton } from '../components/ui.jsx'
+import { colorForLabel } from '../lib/constants.js'
+import { Button, EmptyState, Skeleton } from '../components/ui.jsx'
 import { WorkoutBadge } from '../components/workoutVisuals.jsx'
-import { WORKOUT_COLORS } from '../lib/constants.js'
 import Modal from '../components/Modal.jsx'
 import { toast } from '../components/toast.jsx'
 
@@ -42,13 +41,13 @@ export default function Log() {
   const { user } = useAuth()
   const navigate = useNavigate()
   const [recent, setRecent] = useState(null)
-  const [routineTypes, setRoutineTypes] = useState([])
+  const [splitDays, setSplitDays] = useState([])
   const [showWorkout, setShowWorkout] = useState(false)
   const [showFood, setShowFood] = useState(false)
 
   const load = useCallback(() => {
     api.getRecentLogs(user.id, 12).then(setRecent)
-    api.getAllUserRoutines(user.id).then((rs) => setRoutineTypes(rs.map((r) => r.routine_type)))
+    api.getSplit(user.id).then(setSplitDays)
   }, [user.id])
 
   useEffect(() => {
@@ -111,12 +110,12 @@ export default function Log() {
           </span>
           <div>
             <p className="font-semibold text-chalk">
-              {routineTypes.length ? 'Manage your routines' : 'Build your first routine'}
+              {splitDays.length ? 'Manage your split' : 'Build your split'}
             </p>
             <p className="text-sm text-mist">
-              {routineTypes.length
-                ? `${routineTypes.length} routine${routineTypes.length > 1 ? 's' : ''} ready — Push, Pull, Legs & more`
-                : 'Pick exercises for Push, Pull, Legs, Upper & Lower'}
+              {splitDays.length
+                ? `${splitDays.length}-day split: ${splitDays.map((d) => d.name).slice(0, 4).join(', ')}${splitDays.length > 4 ? '…' : ''}`
+                : 'Choose your days, name them, and pick your exercises'}
             </p>
           </div>
         </div>
@@ -159,8 +158,9 @@ export default function Log() {
       <StartWorkoutModal
         open={showWorkout}
         onClose={() => setShowWorkout(false)}
-        routineTypes={routineTypes}
-        onPick={(type) => navigate(`/workout/${type}`)}
+        days={splitDays}
+        onPickDay={(dayId) => navigate(`/workout/day/${dayId}`)}
+        onBuild={() => navigate('/routines')}
       />
       <LogFoodModal
         open={showFood}
@@ -252,34 +252,45 @@ function FoodRow({ item }) {
   )
 }
 
-function StartWorkoutModal({ open, onClose, routineTypes, onPick }) {
+function StartWorkoutModal({ open, onClose, days, onPickDay, onBuild }) {
   return (
     <Modal open={open} onClose={onClose} title="Start a workout">
-      <p className="mb-4 text-sm text-mist">Choose the type — your saved routine loads automatically.</p>
-      <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2">
-        {ROUTINE_TYPES.map((type) => {
-          const c = WORKOUT_COLORS[type]
-          const hasRoutine = routineTypes.includes(type)
-          return (
-            <button
-              key={type}
-              onClick={() => onPick(type)}
-              className="group flex items-center justify-between rounded-2xl border border-white/[0.08] bg-ink-800 p-4 text-left transition-colors duration-200 hover:border-white/25 cursor-pointer"
-            >
-              <span className="flex items-center gap-3">
-                <span className="h-9 w-1.5 rounded-full" style={{ backgroundColor: c.hex }} />
-                <span>
-                  <span className="block font-display text-xl font-bold text-chalk">{type}</span>
-                  <span className="text-xs text-ash">
-                    {hasRoutine ? 'Routine ready' : 'No routine yet — build one'}
+      {days.length === 0 ? (
+        <EmptyState
+          icon={Dumbbell}
+          title="No split yet"
+          action={<Button onClick={onBuild}>Build your split</Button>}
+        >
+          Set up your training days first, then they'll show here to start in one tap.
+        </EmptyState>
+      ) : (
+        <>
+          <p className="mb-4 text-sm text-mist">Pick today's day — its exercises load automatically.</p>
+          <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2">
+            {days.map((day) => {
+              const hex = colorForLabel(day.name)
+              return (
+                <button
+                  key={day.id}
+                  onClick={() => onPickDay(day.id)}
+                  className="group flex items-center justify-between rounded-2xl border border-white/[0.08] bg-ink-800 p-4 text-left transition-colors duration-200 hover:border-white/25 cursor-pointer"
+                >
+                  <span className="flex items-center gap-3">
+                    <span className="h-9 w-1.5 rounded-full" style={{ backgroundColor: hex }} />
+                    <span className="min-w-0">
+                      <span className="block truncate font-display text-xl font-bold text-chalk">{day.name}</span>
+                      <span className="text-xs text-ash">
+                        {day.exercises.length} exercise{day.exercises.length === 1 ? '' : 's'}
+                      </span>
+                    </span>
                   </span>
-                </span>
-              </span>
-              <ChevronRight className="h-5 w-5 text-ash transition-transform duration-200 group-hover:translate-x-1" style={{ color: c.hex }} />
-            </button>
-          )
-        })}
-      </div>
+                  <ChevronRight className="h-5 w-5 shrink-0 transition-transform duration-200 group-hover:translate-x-1" style={{ color: hex }} />
+                </button>
+              )
+            })}
+          </div>
+        </>
+      )}
     </Modal>
   )
 }

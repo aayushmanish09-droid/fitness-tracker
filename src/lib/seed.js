@@ -190,13 +190,14 @@ function setPR(db, userId, exerciseName, weight, unit = 'kg') {
   })
 }
 
-function setRoutine(db, userId, routineType, exerciseNames) {
+function setRoutine(db, userId, routineType, exerciseNames, order = 0) {
   const routineId = uid()
   const now = new Date().toISOString()
   db.user_routines.push({
     id: routineId,
     user_id: userId,
     routine_type: routineType,
+    display_order: order,
     created_at: now,
     updated_at: now,
   })
@@ -389,10 +390,10 @@ export function seedIfNeeded() {
   })
   db._passwords[demoId] = DEMO_PASSWORD
 
-  // routines
-  for (const [type, names] of Object.entries(DEMO_ROUTINES)) {
-    setRoutine(db, demoId, type, names)
-  }
+  // routines (Push, Pull, Legs, Upper, Lower) → the demo's 5-day split
+  Object.entries(DEMO_ROUTINES).forEach(([type, names], i) => {
+    setRoutine(db, demoId, type, names, i)
+  })
   // history + PRs + food
   generateHistory(db, demoId)
   seedFoodLogs(db, demoId)

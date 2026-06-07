@@ -223,6 +223,71 @@ export function reorderRoutineExercises(routineId, orderedExerciseIds) {
   return updateUserRoutine(routineId, orderedExerciseIds)
 }
 
+// ── Split (whole multi-day program) ─────────────────────────────
+export async function getSplit(userId) {
+  need()
+  const rows = await q(
+    supabase
+      .from('user_routines')
+      .select('id,user_id,routine_type,display_order, routine_exercises(id,exercise_id,display_order)')
+      .eq('user_id', userId),
+  )
+  return rows
+    .sort((a, b) => (a.display_order ?? 0) - (b.display_order ?? 0))
+    .map((r, i) => {
+      const full = shapeRoutine(r)
+      return { id: r.id, name: r.routine_type, order: r.display_order ?? i, exercises: full.exercises }
+    })
+}
+
+export async function getRoutineById(userId, routineId) {
+  need()
+  const r = await q(
+    supabase
+      .from('user_routines')
+      .select('id,user_id,routine_type, routine_exercises(id,exercise_id,display_order)')
+      .eq('id', routineId)
+      .eq('user_id', userId)
+      .maybeSingle(),
+  )
+  if (!r) return null
+  const full = shapeRoutine(r)
+  return { id: r.id, name: r.routine_type, exercises: full.exercises }
+}
+
+export async function saveSplit(userId, days) {
+  need()
+  const existing = await q(supabase.from('user_routines').select('id').eq('user_id', userId))
+  const keep = new Set(days.filter((d) => d.id).map((d) => d.id))
+  // delete removed days (routine_exercises cascade)
+  const toDelete = existing.filter((r) => !keep.has(r.id)).map((r) => r.id)
+  if (toDelete.length) await q(supabase.from('user_routines').delete().in('id', toDelete))
+
+  for (let i = 0; i < days.length; i++) {
+    const d = days[i]
+    let routineId = d.id
+    if (routineId) {
+      await q(
+        supabase
+          .from('user_routines')
+          .update({ routine_type: d.name, display_order: i, updated_at: new Date().toISOString() })
+          .eq('id', routineId),
+      )
+    } else {
+      const created = await q(
+        supabase
+          .from('user_routines')
+          .insert({ user_id: userId, routine_type: d.name, display_order: i })
+          .select('id')
+          .single(),
+      )
+      routineId = created.id
+    }
+    await writeRoutineExercises(routineId, d.exerciseIds || [])
+  }
+  return true
+}
+
 // ════════════════════════ WORKOUTS ════════════════════════════
 export async function startWorkout(userId, workoutType) {
   const routine = await getUserRoutine(userId, workoutType)

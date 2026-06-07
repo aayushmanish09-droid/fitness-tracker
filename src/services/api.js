@@ -42,6 +42,9 @@ export const saveUserRoutine = impl.saveUserRoutine
 export const updateUserRoutine = impl.updateUserRoutine
 export const deleteExerciseFromRoutine = impl.deleteExerciseFromRoutine
 export const reorderRoutineExercises = impl.reorderRoutineExercises
+export const getSplit = impl.getSplit
+export const saveSplit = impl.saveSplit
+export const getRoutineById = impl.getRoutineById
 
 // Workouts
 export const startWorkout = impl.startWorkout

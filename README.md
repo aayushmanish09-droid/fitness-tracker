@@ -64,8 +64,13 @@ their own PRs, **1 pending friend request**, and food logs.
 | **Friends** | Search users · friend requests · friend list · exercise leaderboards |
 
 ### Core flows
-- **Routine Builder** — pick a type (Push/Pull/Legs/Upper/Lower), search & filter the
-  exercise library by muscle group, add/remove/reorder, save. One routine per type.
+- **Routine Builder** — pick **how many days** you train (2–6), then either **build your own**
+  (name each day anything — "Push", "Arms", "Chest & Tris" — and add exercises filtered by
+  muscle group) or start from a **suggested split inspired by popular coaches** (Jeff Nippard,
+  Arnold, Chris Bumstead, Dr. Mike). Reorder days & exercises, rename, save.
+- **Muscle map (ⓘ)** — every exercise box has a tiny info button. Tap it for a front/back
+  body diagram that highlights the **primary** (pulsing lime) and **secondary** muscles the
+  movement works — so you always know what a "Pull-Up" or "Romanian Deadlift" actually hits.
 - **Workout Logger** — your saved routine loads automatically; enter sets/reps/weight,
   add sets, **add an extra exercise just for that session** (without touching the routine),
   and on save the app detects **new PRs** (highest weight ever) and celebrates them.
@@ -73,8 +78,8 @@ their own PRs, **1 pending friend request**, and food logs.
   to reopen a saved workout, fix its sets/exercises/date, or delete it. PRs **recalculate
   from your full history** afterward, so dropping or removing a top lift correctly lowers the PR.
 - **Workout Calendar** — replaces the traditional history list. Color-coded days (tap to edit),
-  always-visible legend, monthly training-distribution summary, month navigation
-  (prev / next / today).
+  colors derived automatically from each day's label, a legend that reflects *your* split,
+  monthly training-distribution summary, and month navigation (prev / next / today).
 - **Leaderboards** — per exercise, ranks **you + accepted friends** by PR (never global).
 - **Food** — free-text entry → a **1–10 health score with per-item reasoning** (why each
   food helped or hurt: "high in protein", "mostly added sugar") **plus a calorie estimate

@@ -45,7 +45,7 @@ export default function App() {
         <Route path="/routines" element={<RoutineBuilder />} />
         <Route path="/routines/:type" element={<RoutineBuilder />} />
         <Route path="/workout/edit/:workoutId" element={<WorkoutLogger />} />
-        <Route path="/workout/:type" element={<WorkoutLogger />} />
+        <Route path="/workout/day/:routineId" element={<WorkoutLogger />} />
         <Route path="/progress" element={<Progress />} />
         <Route path="/progress/exercise/:exerciseId" element={<ExerciseDetail />} />
         <Route path="/friends" element={<Friends />} />

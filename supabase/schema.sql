@@ -47,13 +47,15 @@ create trigger on_auth_user_created
   after insert on auth.users for each row execute function public.handle_new_user();
 
 -- ── routines ────────────────────────────────────────────────────
+-- routine_type holds the day's custom label (e.g. "Chest & Triceps").
+-- display_order keeps the days in sequence.
 create table if not exists public.user_routines (
   id uuid primary key default gen_random_uuid(),
   user_id uuid not null references public.users(id) on delete cascade,
-  routine_type text not null check (routine_type in ('Push','Pull','Legs','Upper','Lower')),
+  routine_type text not null,
+  display_order integer not null default 0,
   created_at timestamptz not null default now(),
-  updated_at timestamptz not null default now(),
-  unique (user_id, routine_type)
+  updated_at timestamptz not null default now()
 );
 create table if not exists public.routine_exercises (
   id uuid primary key default gen_random_uuid(),
@@ -66,7 +68,7 @@ create table if not exists public.routine_exercises (
 create table if not exists public.workouts (
   id uuid primary key default gen_random_uuid(),
   user_id uuid not null references public.users(id) on delete cascade,
-  workout_type text not null check (workout_type in ('Push','Pull','Legs','Upper','Lower','Rest')),
+  workout_type text not null, -- the day's label (e.g. "Push", "Arms") or "Rest"
   workout_date date not null,
   is_rest_day boolean not null default false,
   created_at timestamptz not null default now()

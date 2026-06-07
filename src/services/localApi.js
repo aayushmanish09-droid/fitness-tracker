@@ -18,10 +18,14 @@ import { EXERCISE_LIBRARY, EXERCISE_BY_ID } from '../lib/exerciseLibrary.js'
 import { calculateFoodHealthScore } from '../lib/foodScore.js'
 import { maxWeightFromSets, buildMonthlySeries, filterSeriesByRange } from '../lib/prLogic.js'
 import { seedIfNeeded, addStarterIncomingRequest } from '../lib/seed.js'
+import { isSupabaseConfigured } from './supabaseClient.js'
 
-// run once on import — but only when this (local) backend is actually in use,
-// so we don't seed localStorage when the app is pointed at Supabase.
-if (import.meta.env.VITE_DATA_BACKEND !== 'supabase') {
+// Seed the local demo data whenever this (local) backend is the one actually
+// running. Supabase only "wins" when the flag is set AND the keys are present;
+// if someone sets VITE_DATA_BACKEND=supabase but hasn't pasted their keys yet,
+// we fall back to local — and must still seed so the app isn't empty.
+const usingSupabase = import.meta.env.VITE_DATA_BACKEND === 'supabase' && isSupabaseConfigured
+if (!usingSupabase) {
   seedIfNeeded()
   pruneFoodLogs() // food is weekly-ephemeral — clear anything before this week
 }
@@ -222,6 +226,62 @@ export function deleteExerciseFromRoutine(routineExerciseId) {
 
 export function reorderRoutineExercises(routineId, orderedExerciseIds) {
   return updateUserRoutine(routineId, orderedExerciseIds)
+}
+
+// ── Split (the user's whole multi-day program) ──────────────────
+// A "split" is just the ordered list of the user's routine days, where
+// routine_type holds the custom label (e.g. "Chest & Triceps").
+export function getSplit(userId) {
+  const db = readDB()
+  const days = db.user_routines
+    .filter((r) => r.user_id === userId)
+    .map((r) => routineWithExercises(db, r))
+    .sort((a, b) => (a.display_order ?? 0) - (b.display_order ?? 0))
+    .map((r, i) => ({ id: r.id, name: r.routine_type, order: r.display_order ?? i, exercises: r.exercises }))
+  return ok(days)
+}
+
+export function getRoutineById(userId, routineId) {
+  const db = readDB()
+  const r = db.user_routines.find((x) => x.id === routineId && x.user_id === userId)
+  if (!r) return ok(null)
+  const full = routineWithExercises(db, r)
+  return ok({ id: r.id, name: r.routine_type, exercises: full.exercises })
+}
+
+// Replace the user's entire split. days = [{ id?, name, exerciseIds:[...] }]
+export function saveSplit(userId, days) {
+  return ok(
+    mutate((db) => {
+      const now = new Date().toISOString()
+      const keep = new Set(days.filter((d) => d.id).map((d) => d.id))
+      // drop removed days + their exercises
+      const userRoutineIds = db.user_routines.filter((r) => r.user_id === userId).map((r) => r.id)
+      for (const rid of userRoutineIds) {
+        if (!keep.has(rid)) {
+          db.user_routines = db.user_routines.filter((r) => r.id !== rid)
+          db.routine_exercises = db.routine_exercises.filter((re) => re.routine_id !== rid)
+        }
+      }
+      // upsert each day in order
+      days.forEach((d, i) => {
+        let routine = d.id ? db.user_routines.find((r) => r.id === d.id && r.user_id === userId) : null
+        if (!routine) {
+          routine = { id: uid(), user_id: userId, routine_type: d.name, display_order: i, created_at: now, updated_at: now }
+          db.user_routines.push(routine)
+        } else {
+          routine.routine_type = d.name
+          routine.display_order = i
+          routine.updated_at = now
+          db.routine_exercises = db.routine_exercises.filter((re) => re.routine_id !== routine.id)
+        }
+        ;(d.exerciseIds || []).forEach((exId, j) => {
+          db.routine_exercises.push({ id: uid(), routine_id: routine.id, exercise_id: exId, display_order: j })
+        })
+      })
+      return true
+    }),
+  )
 }
 
 // ════════════════════════ WORKOUTS ════════════════════════════
